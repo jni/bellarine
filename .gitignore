@@ -8,6 +8,9 @@ __pycache__/
 *.so
 *~
 
+# even more general things to ignore
+.*.swp
+
 # due to using tox and pytest
 .tox
 .cache
