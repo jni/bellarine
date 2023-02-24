@@ -1,6 +1,6 @@
 [project]
 name = "ont"  # Required
-version = "0.2.0.dev0"  # Required
+version = "0.2.0"  # Required
 description = "Collection of random functions that @jni finds useful"
 readme = "README.md"
 requires-python = ">=3.9"
