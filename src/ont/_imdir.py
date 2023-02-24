@@ -13,8 +13,11 @@ import toolz as tz
 
 
 @tz.curry
-def _load_block(files_array, block_id=None, *, n_leading_dim):
-    image = np.asarray(iio.imread(files_array[block_id[:n_leading_dim]]))
+def _load_block(files_array, block_id=None,
+        *,
+        n_leading_dim,
+        load_func=iio.imread):
+    image = np.asarray(load_func(files_array[block_id[:n_leading_dim]]))
     return image[(np.newaxis,) * n_leading_dim]
 
 
@@ -28,7 +31,7 @@ def _find_shape(file_sequence):
         return _find_shape(parents) + (n_total // n_parents,)
 
 
-def load_images(root, pattern='*.tif'):
+def load_images(root, pattern='*.tif', load_func=iio.imread):
     """Load images from root (heh) folder.
 
     Parameters
@@ -39,6 +42,8 @@ def load_images(root, pattern='*.tif'):
         A glob pattern with zero or more levels of subdirectories. Each level
         will be counted as a dimension in the output array. Directories *must*
         be specified with a forward slash ("/").
+    load_func : Callable[Path | str, np.ndarray]
+        The function to load individual arrays from files.
 
     Returns
     -------
@@ -58,7 +63,7 @@ def load_images(root, pattern='*.tif'):
     lagging_shape = file_props.shape
     files_array = np.array(list(files)).reshape(leading_shape)
     stacked = da.map_blocks(
-        _load_block(n_leading_dim=n_leading_dim),
+        _load_block(n_leading_dim=n_leading_dim, load_func=load_func),
         files_array,
         chunks=tuple([(1,) * shp for shp in leading_shape]) + lagging_shape,
         dtype=file_props.dtype,
