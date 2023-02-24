@@ -31,8 +31,8 @@ def _find_shape(file_sequence):
         return _find_shape(parents) + (n_total // n_parents,)
 
 
-def load_images(root, pattern='*.tif', load_func=iio.imread):
-    """Load images from root (heh) folder.
+def imreads(root, pattern='*.tif', load_func=iio.imread):
+    """Read images from root (heh) folder.
 
     Parameters
     ----------
