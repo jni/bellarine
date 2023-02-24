@@ -48,6 +48,10 @@ def load_images(root, pattern='*.tif'):
     """
     root = Path(root)
     files = sorted(root.glob(pattern))
+    if len(files) == 0:
+        raise ValueError(
+                f'no files found at path {root} with pattern {pattern}.'
+                )
     leading_shape = _find_shape(files)
     n_leading_dim = len(leading_shape)
     file_props = iio.improps(files[0])
