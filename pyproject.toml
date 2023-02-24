@@ -1,6 +1,6 @@
 [project]
-name = "bellarine"  # Required
-version = "0.1.0"  # Required
+name = "ont"  # Required
+version = "0.2.0.dev0"  # Required
 description = "Collection of random functions that @jni finds useful"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -35,12 +35,12 @@ dependencies = [ # Optional
 dev = ["check-manifest"]
 test = ["coverage"]
 
-# [project.urls]  # Optional
-# "Homepage" = "https://github.com/pypa/sampleproject"
-# "Bug Reports" = "https://github.com/pypa/sampleproject/issues"
+[project.urls]  # Optional
+"Homepage" = "https://github.com/jni/ont"
+"Bug Reports" = "https://github.com/jni/ont/issues"
 # "Funding" = "https://donate.pypi.org"
 # "Say Thanks!" = "http://saythanks.io/to/example"
-# "Source" = "https://github.com/pypa/sampleproject/"
+"Source" = "https://github.com/jni/ont"
 
 # [project.scripts]  # Optional
 # sample = "sample:main"
