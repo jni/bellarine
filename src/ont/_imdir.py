@@ -1,6 +1,8 @@
 """Read nested directories of images into an n-dimensional array."""
 import os
 import sys
+from dataclasses import dataclass
+from typing import Protocol, Tuple
 from pathlib import Path
 from glob import glob
 from math import prod
@@ -10,6 +12,30 @@ import dask.array as da
 import numpy as np
 import napari
 import toolz as tz
+
+
+class ImagePropertiesProto(Protocol):
+    shape : Tuple[int]
+    dtype : type
+
+
+@dataclass
+class ImageProperties:
+    shape : Tuple[int]
+    dtype : type
+
+
+def image_properties(filename) -> ImagePropertiesProto:
+    """Return the shape and dtype of the image data in filename.
+
+    This function uses iio.v3.improps."""
+    return iio.improps(filename)
+
+
+@tz.curry
+def image_properties_loaded(filename, load_func=iio.imread) -> ImageProperties:
+    loaded = load_func(filename)
+    return ImageProperties(shape=loaded.shape, dtype=loaded.dtype)
 
 
 @tz.curry
@@ -31,7 +57,7 @@ def _find_shape(file_sequence):
         return _find_shape(parents) + (n_total // n_parents,)
 
 
-def imreads(root, pattern='*.tif', load_func=iio.imread):
+def imreads(root, pattern='*.tif', load_func=iio.imread, props_func=None):
     """Read images from root (heh) folder.
 
     Parameters
@@ -44,6 +70,11 @@ def imreads(root, pattern='*.tif', load_func=iio.imread):
         be specified with a forward slash ("/").
     load_func : Callable[Path | str, np.ndarray]
         The function to load individual arrays from files.
+    props_func : Callable[Path | str, ImageProperties]
+        A function to get the array shape from a file. If omitted, `load_func`
+        is called on the first file to get the shape. In some cases,
+        `image_properties` is the most efficient function here and may avoid
+        loading a large image into memory.
 
     Returns
     -------
@@ -51,6 +82,11 @@ def imreads(root, pattern='*.tif', load_func=iio.imread):
         The stacked dask array. The array will have the number of dimensions of
         each image plus one per directory level.
     """
+    if props_func is None:
+        if load_func is not iio.imread:
+            props_func = image_properties_loaded(load_func=load_func)
+        else:
+            props_func = image_properties
     root = Path(root)
     files = sorted(root.glob(pattern))
     if len(files) == 0:
@@ -59,14 +95,15 @@ def imreads(root, pattern='*.tif', load_func=iio.imread):
                 )
     leading_shape = _find_shape(files)
     n_leading_dim = len(leading_shape)
-    file_props = iio.improps(files[0])
-    lagging_shape = file_props.shape
+    props = props_func(files[0])
+    lagging_shape = props.shape
     files_array = np.array(list(files)).reshape(leading_shape)
+    chunks = tuple((1,) * shp for shp in leading_shape) + lagging_shape
     stacked = da.map_blocks(
-        _load_block(n_leading_dim=n_leading_dim, load_func=load_func),
-        files_array,
-        chunks=tuple([(1,) * shp for shp in leading_shape]) + lagging_shape,
-        dtype=file_props.dtype,
-    )
+            _load_block(n_leading_dim=n_leading_dim, load_func=load_func),
+            files_array,
+            chunks=chunks,
+            dtype=props.dtype,
+            )
     return stacked
 
